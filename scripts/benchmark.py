@@ -214,7 +214,7 @@ def run_perplexity_benchmark(config, models, llama_cpp_dir, output_path, execute
         ]
         stdout, stderr, returncode, latency, peak_memory = run_process(command, execute)
         combined = f"{stdout}\n{stderr}"
-        match = re.search(r"(?:ppl|perplexity)\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)", combined, re.IGNORECASE)
+        match = re.search(r"(?:PPL|perplexity)\s*=\s*([0-9]+(?:\.[0-9]+)?)", combined, re.IGNORECASE)
         record = base_record(config, variant, model, perplexity, None, None)
         record.update(
             {

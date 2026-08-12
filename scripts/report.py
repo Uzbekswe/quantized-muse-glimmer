@@ -33,6 +33,17 @@ def speed_value(record, field):
     return float(match.group(1)) if match else None
 
 
+def quality_value(record):
+    value = record.get("quality_metric")
+    raw = record.get("raw_output", "")
+    if record.get("kind") == "perplexity":
+        import re
+
+        match = re.search(r"(?:PPL|perplexity)\s*=\s*([0-9]+(?:\.[0-9]+)?)", raw, re.IGNORECASE)
+        return float(match.group(1)) if match else value
+    return value
+
+
 def summarize(records):
     groups = defaultdict(list)
     for record in records:
@@ -44,7 +55,7 @@ def summarize(records):
         decode = numeric(speed_value(item, "decode_tokens_per_second") for item in items)
         latency = numeric(item.get("latency_ms") for item in items)
         peak_memory = numeric(item.get("peak_memory_bytes") for item in items)
-        quality = numeric(item.get("quality_metric") for item in items)
+        quality = numeric(quality_value(item) for item in items)
         rows.append(
             {
                 "variant": variant,
