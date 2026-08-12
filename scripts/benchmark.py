@@ -141,18 +141,19 @@ def run_prompt_benchmark(config, models, llama_cpp_dir, output_path, execute):
                     command.insert(command.index("--single-turn"), "--jinja")
                 stdout, stderr, returncode, latency, peak_memory = run_process(command, execute)
                 combined = f"{stdout}\n{stderr}"
+                visible_output = stdout if stdout.strip() else stderr
                 record = base_record(config, variant, model, llama_cli, prompt["id"], None)
                 record.update(
                     {
                         "repeat": repetition,
-                        "output": stdout,
+                        "output": visible_output,
                         "output_tokens": parse_token_count(combined, "eval time"),
                         "prefill_tokens_per_second": parse_tokens_per_second(combined, "prompt eval time"),
                         "decode_tokens_per_second": parse_tokens_per_second(combined, "eval time"),
                         "latency_ms": latency,
                         "peak_memory_bytes": peak_memory,
                         "command": command_string(command),
-                        "quality_metric": parse_expected(prompt, stdout),
+                        "quality_metric": parse_expected(prompt, combined),
                         "error": None if returncode == 0 else (stderr[-2000:] or f"exit {returncode}"),
                     }
                 )
