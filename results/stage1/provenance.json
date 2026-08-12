@@ -1,0 +1,37 @@
+{
+  "experiment": "q4-plus-baselines",
+  "status": "preliminary",
+  "historical_stage1": {
+    "hardware": "NVIDIA A100 SXM 80 GB",
+    "source_revision": {
+      "value": null,
+      "status": "unavailable",
+      "reason": "Stage 1 used mutable Hugging Face main and the exact commit was not exported before the workspace ended."
+    },
+    "raw_speed_records": {
+      "value": null,
+      "status": "unavailable",
+      "reason": "The ephemeral workspace restarted before raw speed output was exported; report values are labelled imported console measurements."
+    },
+    "raw_perplexity_records": {
+      "value": null,
+      "status": "unavailable",
+      "reason": "The ephemeral workspace restarted before raw perplexity output was exported; report values are labelled imported console measurements."
+    },
+    "billing_snapshots": {
+      "value": null,
+      "status": "unavailable",
+      "reason": "The final balance was observed, but the original start/end JSON snapshots were not committed to the repository."
+    },
+    "peak_memory": {
+      "value": null,
+      "status": "unavailable",
+      "reason": "The original container did not provide a usable /usr/bin/time -v capture for PTY-backed prompt runs."
+    }
+  },
+  "future_reproduction": {
+    "source_revision": "a4e59da52a7bc87ae7251dd5545c0dd437c44b68",
+    "source_revision_kind": "immutable Hugging Face commit",
+    "config": "configs/experiment.yaml"
+  }
+}

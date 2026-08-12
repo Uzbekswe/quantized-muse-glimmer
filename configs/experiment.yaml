@@ -5,7 +5,10 @@ project:
 
 model:
   source_repo: meta-models/Muse-Glimmer-30B
-  source_revision: main
+  # Immutable revision for future downloads. Stage 1 historically used mutable
+  # `main`; that historical source SHA was not exported and is not inferred here.
+  source_revision: a4e59da52a7bc87ae7251dd5545c0dd437c44b68
+  source_revision_kind: commit
   official_gguf_repo: meta-models/Muse-Glimmer-30B-GGUF
   llama_cpp_min_build: 10353
 
@@ -54,6 +57,7 @@ benchmark:
   top_k: 1
   gpu_layers: 999
   jinja: true
+  context_length: 512
   context_lengths: [512, 4096]
 
 stages:
@@ -72,3 +76,6 @@ stages:
 hardware_requirements:
   minimum_system_ram_gib: 64
   recommended_free_disk_gib: 150
+  minimum_gpu_count: 1
+  minimum_gpu_memory_gib: 80
+  required_gpu_name_pattern: A100

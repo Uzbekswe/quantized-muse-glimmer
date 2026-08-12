@@ -41,24 +41,24 @@ an A100-visible CUDA runtime. The object volume should be mounted at
 ```bash
 python -m scripts.prepare --execute --text-only
 python -m scripts.convert --execute
-python -m scripts.preflight --require-artifacts --output results/preflight-after-convert.json
+python -m scripts.preflight --required-artifacts bf16 --output results/preflight-after-convert.json
 
-# Verify BF16 before deleting the source checkpoint.
-./llama.cpp/build/bin/llama-cli \
-  -m artifacts/converted/Muse-Glimmer-30B-BF16.gguf \
-  -ngl 99 -c 512 --jinja --single-turn -n 16 \
-  -p 'Reply with exactly: BF16 smoke test passed.'
+# Verify BF16 before deleting the source checkpoint. The helper asserts text.
+python -m scripts.smoke \
+  --model artifacts/converted/Muse-Glimmer-30B-BF16.gguf \
+  --expected 'BF16 smoke test passed.'
 
-# After the BF16 smoke test, reclaim the source-checkpoint disk space.
-python -m scripts.cleanup_source --execute
+# Record the converted artifact hash, then reclaim source-checkpoint space.
+python -m scripts.prepare --verify-only
+python -m scripts.cleanup_source --execute --confirm-source-cleanup \
+  --checksum-file results/checksums.json
 
 python -m scripts.quantize --execute --recipes q4_k_m --threads "$(nproc)"
-python -m scripts.preflight --require-artifacts --output results/preflight-after-q4.json
+python -m scripts.preflight --required-artifacts bf16,q4 --output results/preflight-after-q4.json
 
-./llama.cpp/build/bin/llama-cli \
-  -m artifacts/quantized/Muse-Glimmer-30B-q4_k_m.gguf \
-  -ngl 99 -c 512 --jinja --single-turn -n 16 \
-  -p 'Reply with exactly: Q4 smoke test passed.'
+python -m scripts.smoke \
+  --model artifacts/quantized/Muse-Glimmer-30B-q4_k_m.gguf \
+  --expected 'Q4 smoke test passed.'
 
 python -m scripts.preserve --execute \
   --source artifacts/quantized/Muse-Glimmer-30B-q4_k_m.gguf \

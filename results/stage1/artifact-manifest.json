@@ -1,0 +1,27 @@
+{
+  "status": "verified-artifact-preliminary-evidence",
+  "artifacts": [
+    {
+      "name": "Muse-Glimmer-30B-custom-Q4_K_M.gguf",
+      "variant": "custom Q4_K_M",
+      "source": "BF16 Muse Glimmer GGUF converted from the Meta Hugging Face checkpoint",
+      "size_bytes": 16935294592,
+      "size_gib": 15.77,
+      "sha256": "dcd100005262563bdcef650b2de0b41f285570a5dc2760af63d546c224b2e21",
+      "storage": "VESSL object storage; excluded from Git"
+    },
+    {
+      "name": "Muse-Glimmer-30B-BF16.gguf",
+      "variant": "BF16 source intermediate",
+      "size_bytes": 55725514112,
+      "size_gib": 51.90,
+      "sha256": null,
+      "sha256_status": "not-exported"
+    }
+  ],
+  "tooling": {
+    "llama_cpp_build": "b10353",
+    "runtime": "llama.cpp",
+    "inference_requires_jinja": true
+  }
+}

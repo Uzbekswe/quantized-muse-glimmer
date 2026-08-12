@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shlex
 import subprocess
 import sys
@@ -158,8 +159,6 @@ def llama_version(llama_cli: Path) -> str:
 def parse_tokens_per_second(text: str, label: str) -> float | None:
     """Parse llama.cpp's human-readable benchmark statistics."""
 
-    import re
-
     pattern = rf"{label}.*?([0-9]+(?:\.[0-9]+)?)\s+tokens per second"
     match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
     if match:
@@ -167,8 +166,9 @@ def parse_tokens_per_second(text: str, label: str) -> float | None:
 
     # llama-bench emits a compact table, for example:
     # ``| pp512 | 3395.93 ± 318.07 |`` and ``| tg128 | 28.62 ± 0.02 |``.
+    table_label = rf"{re.escape(label)}\d+" if label in {"pp", "tg"} else re.escape(label)
     table_match = re.search(
-        rf"\|\s*{label}\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s*(?:±|\\+/-)",
+        rf"\|\s*{table_label}\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s*(?:±|\+/-)",
         text,
         flags=re.IGNORECASE,
     )
@@ -176,8 +176,29 @@ def parse_tokens_per_second(text: str, label: str) -> float | None:
 
 
 def parse_token_count(text: str, label: str) -> int | None:
-    import re
-
     pattern = rf"{label}.*?/\s*([0-9]+)\s+(?:runs|tokens)"
     match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
     return int(match.group(1)) if match else None
+
+
+def parse_perplexity(text: str) -> float | None:
+    """Parse llama-perplexity's human-readable PPL output."""
+
+    match = re.search(r"(?:PPL|perplexity)\s*=\s*([0-9]+(?:\.[0-9]+)?)", text, re.IGNORECASE)
+    return float(match.group(1)) if match else None
+
+
+def parse_peak_memory(text: str) -> int | None:
+    """Parse GNU time's maximum resident set size in bytes."""
+
+    match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", text)
+    return int(match.group(1)) * 1024 if match else None
+
+
+def extract_completion(output: str, prompt: str) -> str:
+    """Remove at most one leading echoed prompt from captured model output."""
+
+    text = output.replace("\r", "").strip()
+    if text.startswith(prompt):
+        return text[len(prompt) :].lstrip()
+    return text
