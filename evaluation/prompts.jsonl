@@ -1,0 +1,10 @@
+{"id":"reasoning_01","category":"reasoning","prompt":"A box contains 3 red balls and 2 blue balls. Without replacement, what is the probability that two draws are both red? Give the simplified fraction.","expected":"3/10"}
+{"id":"reasoning_02","category":"reasoning","prompt":"If every quantized model is smaller than its BF16 source, and model A is not smaller than model B, can A be a lower-bit version of B? Answer yes or no and explain briefly."}
+{"id":"coding_01","category":"coding","prompt":"Write a Python function named normalize_name that strips surrounding whitespace, collapses internal whitespace to one space, and returns title case. Include one short example."}
+{"id":"coding_02","category":"coding","prompt":"Find the bug in this Python code and return a corrected version: def mean(xs): return sum(xs) / len(xs) if xs else 0"}
+{"id":"tool_call_01","category":"tool_call","prompt":"Return exactly one JSON object for a search tool with keys name and arguments. The name must be search and arguments must contain query='GGUF quantization' and limit=3."}
+{"id":"tool_call_02","category":"tool_call","prompt":"Return exactly one JSON object with name='benchmark' and arguments containing variant='Q4_K_M' and repetitions=3."}
+{"id":"multilingual_01","category":"multilingual","prompt":"Explain in one sentence, in Korean, why a 4-bit model usually uses less memory than a BF16 model."}
+{"id":"long_context_01","category":"long_response","prompt":"Give a concise five-step checklist for comparing two language-model quantizations fairly. Number the steps."}
+{"id":"general_01","category":"general","prompt":"What is the main difference between a calibration dataset and an evaluation dataset in quantization research?"}
+{"id":"general_02","category":"general","prompt":"Name two reasons not to benchmark a quantized model only by file size."}

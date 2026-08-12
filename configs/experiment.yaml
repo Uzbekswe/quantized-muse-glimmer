@@ -1,0 +1,59 @@
+project:
+  name: quantized-muse-glimmer
+  milestone: text-first-v0.1
+  license: MIT
+
+model:
+  source_repo: meta-models/Muse-Glimmer-30B
+  source_revision: main
+  official_gguf_repo: meta-models/Muse-Glimmer-30B-GGUF
+  llama_cpp_min_build: 10353
+
+paths:
+  artifacts_dir: artifacts
+  source_dir: artifacts/source/Muse-Glimmer-30B
+  bf16_gguf: artifacts/converted/Muse-Glimmer-30B-BF16.gguf
+  quantized_dir: artifacts/quantized
+  official_dir: artifacts/official
+  calibration_dir: calibration
+  evaluation_dir: evaluation
+  results_dir: results
+
+recipes:
+  - id: q4_k_m
+    quant_type: Q4_K_M
+    calibrated: false
+  - id: q4_k_m_imatrix
+    quant_type: Q4_K_M
+    calibrated: true
+  - id: q5_k_m
+    quant_type: Q5_K_M
+    calibrated: false
+  - id: q5_k_m_imatrix
+    quant_type: Q5_K_M
+    calibrated: true
+  - id: q6_k
+    quant_type: Q6_K
+    calibrated: false
+
+official_baselines:
+  - id: meta_kquant_17gb
+    filename: muse-glimmer-30B-kquant-17gb.gguf
+  - id: meta_kquant_dynamic
+    filename: muse-glimmer-30B-kquant-dynamic.gguf
+
+benchmark:
+  prompts_file: evaluation/prompts.jsonl
+  perplexity_file: evaluation/perplexity.txt
+  repetitions: 3
+  max_tokens: 128
+  seed: 42
+  temperature: 0.0
+  top_p: 1.0
+  top_k: 1
+  gpu_layers: 999
+  context_lengths: [512, 4096]
+
+hardware_requirements:
+  minimum_system_ram_gib: 64
+  recommended_free_disk_gib: 150

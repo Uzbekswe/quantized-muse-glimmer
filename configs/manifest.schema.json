@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Quantized Muse Glimmer benchmark record",
+  "type": "object",
+  "required": [
+    "variant",
+    "source_model_revision",
+    "llama_cpp_revision",
+    "quantization_recipe",
+    "calibration_dataset_hash",
+    "hardware",
+    "prompt_id",
+    "seed",
+    "context_length",
+    "prompt_tokens",
+    "output_tokens",
+    "prefill_tokens_per_second",
+    "decode_tokens_per_second",
+    "latency_ms",
+    "peak_memory_bytes",
+    "quality_metric",
+    "error"
+  ],
+  "properties": {
+    "variant": {"type": "string"},
+    "source_model_revision": {"type": "string"},
+    "llama_cpp_revision": {"type": "string"},
+    "quantization_recipe": {"type": "string"},
+    "calibration_dataset_hash": {"type": "string"},
+    "hardware": {"type": "object"},
+    "prompt_id": {"type": ["string", "null"]},
+    "seed": {"type": ["integer", "null"]},
+    "context_length": {"type": ["integer", "null"]},
+    "prompt_tokens": {"type": ["integer", "null"]},
+    "output_tokens": {"type": ["integer", "null"]},
+    "prefill_tokens_per_second": {"type": ["number", "null"]},
+    "decode_tokens_per_second": {"type": ["number", "null"]},
+    "latency_ms": {"type": ["number", "null"]},
+    "peak_memory_bytes": {"type": ["integer", "null"]},
+    "quality_metric": {"type": ["number", "string", "null"]},
+    "error": {"type": ["string", "null"]}
+  }
+}

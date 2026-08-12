@@ -1,0 +1,7 @@
+Quantization reduces the number of bits used to represent model weights. The
+goal is to reduce memory and improve practical inference while preserving the
+behavior that matters for the target workload.
+
+Reproducible research requires fixed inputs, versioned software, recorded
+hardware, and explicit limitations. A benchmark result without provenance is
+an observation, not a reproducible experiment.

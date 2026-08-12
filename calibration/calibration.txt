@@ -1,0 +1,24 @@
+This calibration corpus is intentionally small, public, and representative of
+the first text-only experiment. It mixes ordinary prose, code, structured
+JSON, and multi-step instructions so the importance matrix exercises more than
+one narrow behavior.
+
+Quantization stores an approximate representation of a tensor using fewer bits.
+The approximation is useful only when the resulting inference behavior remains
+good enough for the target workload.
+
+def bounded_average(values: list[float]) -> float:
+    if not values:
+        raise ValueError("values must not be empty")
+    return sum(values) / len(values)
+
+{"name":"search","arguments":{"query":"quantization calibration","limit":5}}
+
+Explain the difference between a model checkpoint, a GGUF container, and an
+inference runtime. State which parts are data and which parts are software.
+
+A good experiment records the model revision, runtime revision, command line,
+hardware, calibration data, random seed, and output checksum.
+
+When a tool call fails, inspect the error, preserve the original input, make the
+smallest corrective change, and rerun the same measurement.
