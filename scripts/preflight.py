@@ -29,8 +29,9 @@ def llama_revision(llama_cpp_dir: Path) -> tuple[str | None, int | None]:
     """Return the checkout revision and optional bNNNN branch number."""
     branch = command_output(["git", "-C", str(llama_cpp_dir), "symbolic-ref", "--short", "HEAD"])
     commit = command_output(["git", "-C", str(llama_cpp_dir), "rev-parse", "--short", "HEAD"])
-    build = llama_build(branch or "")
-    return commit or branch, build
+    tags = command_output(["git", "-C", str(llama_cpp_dir), "tag", "--points-at", "HEAD"])
+    build = llama_build(branch or "") or llama_build(tags or "")
+    return commit or branch or tags, build
 
 
 def check(config: dict, artifact_dir: Path, llama_cpp_dir: Path, require_artifacts: bool) -> dict:
