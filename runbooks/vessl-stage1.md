@@ -19,6 +19,10 @@ git clone https://github.com/Uzbekswe/quantized-muse-glimmer.git
 cd quantized-muse-glimmer
 python -m pip install -e '.[dev]'
 git clone --branch b10353 https://github.com/ggml-org/llama.cpp.git
+# Muse Glimmer's tokenizer configuration uses the Transformers 5 tokenizer API.
+# Install converter dependencies explicitly; do not install llama.cpp's
+# aggregate requirements over the CUDA-enabled PyTorch image.
+python -m pip install 'transformers==5.14.1' 'huggingface_hub==1.27.0'
 cmake -S llama.cpp -B llama.cpp/build -DGGML_CUDA=ON
 cmake --build llama.cpp/build --config Release -j "$(nproc)"
 mkdir -p results
