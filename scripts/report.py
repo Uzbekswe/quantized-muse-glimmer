@@ -16,6 +16,23 @@ def numeric(values):
     return [float(value) for value in values if isinstance(value, (int, float))]
 
 
+def speed_value(record, field):
+    value = record.get(field)
+    if isinstance(value, (int, float)):
+        return value
+    raw = record.get("raw_output", "")
+    if record.get("kind") != "speed":
+        return None
+    marker = "pp" if field == "prefill_tokens_per_second" else "tg"
+    import re
+
+    match = re.search(
+        rf"\|\s*{marker}\d+\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s*(?:±|\\+/-)",
+        raw,
+    )
+    return float(match.group(1)) if match else None
+
+
 def summarize(records):
     groups = defaultdict(list)
     for record in records:
@@ -23,8 +40,8 @@ def summarize(records):
     rows = []
     for (variant, kind), items in sorted(groups.items()):
         sizes = numeric(item.get("model_size_bytes") for item in items)
-        prefill = numeric(item.get("prefill_tokens_per_second") for item in items)
-        decode = numeric(item.get("decode_tokens_per_second") for item in items)
+        prefill = numeric(speed_value(item, "prefill_tokens_per_second") for item in items)
+        decode = numeric(speed_value(item, "decode_tokens_per_second") for item in items)
         latency = numeric(item.get("latency_ms") for item in items)
         peak_memory = numeric(item.get("peak_memory_bytes") for item in items)
         quality = numeric(item.get("quality_metric") for item in items)
