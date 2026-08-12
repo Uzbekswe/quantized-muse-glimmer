@@ -1,7 +1,7 @@
 # Research report
 
-This directory will contain generated tables and narrative once the GPU-backed
-experiment has run. The first report should answer:
+The first GPU-backed tranche is documented in
+[stage1-q4.md](stage1-q4.md). It answers:
 
 1. How much smaller is each variant than the BF16 source?
 2. What speed and memory tradeoffs appear on the same hardware?
