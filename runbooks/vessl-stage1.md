@@ -19,7 +19,7 @@ git clone https://github.com/Uzbekswe/quantized-muse-glimmer.git
 cd quantized-muse-glimmer
 python -m pip install -e '.[dev]'
 git clone --branch b10353 https://github.com/ggml-org/llama.cpp.git
-cmake -B llama.cpp/build -DGGML_CUDA=ON
+cmake -S llama.cpp -B llama.cpp/build -DGGML_CUDA=ON
 cmake --build llama.cpp/build --config Release -j "$(nproc)"
 mkdir -p results
 exec > >(tee -a results/command-log.txt) 2> >(tee -a results/failure-log.txt >&2)
