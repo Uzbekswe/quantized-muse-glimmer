@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -50,14 +51,20 @@ def parse_expected(prompt: dict, output: str) -> float | None:
     return 1.0 if str(expected).lower() in output.lower() else 0.0
 
 
-def run_process(command: list[str], execute: bool) -> tuple[str, str, int, float]:
+def run_process(command: list[str], execute: bool) -> tuple[str, str, int, float, int | None]:
     print(f"$ {command_string(command)}")
     if not execute:
-        return "", "", 0, 0.0
+        return "", "", 0, 0.0, None
+    timed_command = command
+    time_binary = "/usr/bin/time"
+    if shutil.which(time_binary):
+        timed_command = [time_binary, "-v", *command]
     started = time.perf_counter()
-    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    result = subprocess.run(timed_command, check=False, capture_output=True, text=True)
     elapsed = (time.perf_counter() - started) * 1000
-    return result.stdout, result.stderr, result.returncode, elapsed
+    memory_match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", result.stderr)
+    peak_memory = int(memory_match.group(1)) * 1024 if memory_match else None
+    return result.stdout, result.stderr, result.returncode, elapsed, peak_memory
 
 
 def base_record(config, variant, model, llama_cli, prompt_id=None, context_length=None):
@@ -85,6 +92,7 @@ def base_record(config, variant, model, llama_cli, prompt_id=None, context_lengt
         "peak_memory_bytes": None,
         "quality_metric": None,
         "error": None,
+        "command": None,
     }
 
 
@@ -93,8 +101,9 @@ def run_prompt_benchmark(config, models, llama_cpp_dir, output_path, execute):
     prompts = [json.loads(line) for line in prompts_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     llama_cli = binary_path(llama_cpp_dir, "llama-cli")
     records = 0
+    prompt_repetitions = config["benchmark"].get("prompt_repetitions", config["benchmark"]["repetitions"])
     for variant, model, recipe in models:
-        for repetition in range(config["benchmark"]["repetitions"]):
+        for repetition in range(prompt_repetitions):
             for prompt in prompts:
                 command = [
                     str(llama_cli),
@@ -117,7 +126,9 @@ def run_prompt_benchmark(config, models, llama_cpp_dir, output_path, execute):
                     "--single-turn",
                     "--no-display-prompt",
                 ]
-                stdout, stderr, returncode, latency = run_process(command, execute)
+                if config["benchmark"].get("jinja", True):
+                    command.insert(command.index("--single-turn"), "--jinja")
+                stdout, stderr, returncode, latency, peak_memory = run_process(command, execute)
                 combined = f"{stdout}\n{stderr}"
                 record = base_record(config, variant, model, llama_cli, prompt["id"], None)
                 record.update(
@@ -128,6 +139,8 @@ def run_prompt_benchmark(config, models, llama_cpp_dir, output_path, execute):
                         "prefill_tokens_per_second": parse_tokens_per_second(combined, "prompt eval time"),
                         "decode_tokens_per_second": parse_tokens_per_second(combined, "eval time"),
                         "latency_ms": latency,
+                        "peak_memory_bytes": peak_memory,
+                        "command": command_string(command),
                         "quality_metric": parse_expected(prompt, stdout),
                         "error": None if returncode == 0 else (stderr[-2000:] or f"exit {returncode}"),
                     }
@@ -154,7 +167,7 @@ def run_speed_benchmark(config, models, llama_cpp_dir, output_path, execute):
             "-ngl",
             str(config["benchmark"]["gpu_layers"]),
         ]
-        stdout, stderr, returncode, latency = run_process(command, execute)
+        stdout, stderr, returncode, latency, peak_memory = run_process(command, execute)
         combined = f"{stdout}\n{stderr}"
         record = base_record(config, variant, model, bench, None, 512)
         record.update(
@@ -163,6 +176,8 @@ def run_speed_benchmark(config, models, llama_cpp_dir, output_path, execute):
                 "prefill_tokens_per_second": parse_tokens_per_second(combined, "pp") or parse_tokens_per_second(combined, "prompt eval time"),
                 "decode_tokens_per_second": parse_tokens_per_second(combined, "tg") or parse_tokens_per_second(combined, "eval time"),
                 "latency_ms": latency,
+                "peak_memory_bytes": peak_memory,
+                "command": command_string(command),
                 "raw_output": combined[-8000:],
                 "error": None if returncode == 0 else (stderr[-2000:] or f"exit {returncode}"),
             }
@@ -186,7 +201,7 @@ def run_perplexity_benchmark(config, models, llama_cpp_dir, output_path, execute
             "-ngl",
             str(config["benchmark"]["gpu_layers"]),
         ]
-        stdout, stderr, returncode, latency = run_process(command, execute)
+        stdout, stderr, returncode, latency, peak_memory = run_process(command, execute)
         combined = f"{stdout}\n{stderr}"
         match = re.search(r"(?:ppl|perplexity)\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)", combined, re.IGNORECASE)
         record = base_record(config, variant, model, perplexity, None, None)
@@ -195,6 +210,8 @@ def run_perplexity_benchmark(config, models, llama_cpp_dir, output_path, execute
                 "kind": "perplexity",
                 "quality_metric": float(match.group(1)) if match else None,
                 "latency_ms": latency,
+                "peak_memory_bytes": peak_memory,
+                "command": command_string(command),
                 "raw_output": combined[-8000:],
                 "error": None if returncode == 0 else (stderr[-2000:] or f"exit {returncode}"),
             }

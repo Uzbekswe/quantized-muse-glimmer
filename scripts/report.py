@@ -26,6 +26,7 @@ def summarize(records):
         prefill = numeric(item.get("prefill_tokens_per_second") for item in items)
         decode = numeric(item.get("decode_tokens_per_second") for item in items)
         latency = numeric(item.get("latency_ms") for item in items)
+        peak_memory = numeric(item.get("peak_memory_bytes") for item in items)
         quality = numeric(item.get("quality_metric") for item in items)
         rows.append(
             {
@@ -36,6 +37,7 @@ def summarize(records):
                 "prefill_tok_s_median": round(median(prefill), 3) if prefill else None,
                 "decode_tok_s_median": round(median(decode), 3) if decode else None,
                 "latency_ms_median": round(median(latency), 3) if latency else None,
+                "peak_memory_bytes_median": round(median(peak_memory)) if peak_memory else None,
                 "quality_metric_mean": round(mean(quality), 4) if quality else None,
                 "errors": sum(bool(item.get("error")) for item in items),
             }
@@ -49,12 +51,12 @@ def write_outputs(rows, markdown_path, csv_path):
         "",
         "Generated from machine-readable benchmark records. Empty cells mean the corresponding runtime metric was not parsed or was not run.",
         "",
-        "| Variant | Kind | Records | Size (GiB) | Prefill tok/s | Decode tok/s | Latency (ms) | Quality metric | Errors |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Variant | Kind | Records | Size (GiB) | Prefill tok/s | Decode tok/s | Latency (ms) | Peak memory (bytes) | Quality metric | Errors |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         markdown.append(
-            "| {variant} | {kind} | {records} | {size_gib} | {prefill_tok_s_median} | {decode_tok_s_median} | {latency_ms_median} | {quality_metric_mean} | {errors} |".format(**row)
+            "| {variant} | {kind} | {records} | {size_gib} | {prefill_tok_s_median} | {decode_tok_s_median} | {latency_ms_median} | {peak_memory_bytes_median} | {quality_metric_mean} | {errors} |".format(**row)
         )
     markdown_path = project_path(markdown_path)
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
