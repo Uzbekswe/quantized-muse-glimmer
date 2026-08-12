@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import shutil
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 from statistics import median
@@ -71,11 +73,25 @@ def run_process(command: list[str], execute: bool) -> tuple[str, str, int, float
     if shutil.which(time_binary):
         timed_command = [time_binary, "-v", *command]
     started = time.perf_counter()
+    transcript_path = None
+    if "--single-turn" in command and shutil.which("script"):
+        # llama-cli's conversation output is TTY-aware. Capture a pseudo-TTY
+        # transcript so task outputs are recorded instead of silently empty.
+        handle = tempfile.NamedTemporaryFile(prefix="muse-tty-", suffix=".log", delete=False)
+        transcript_path = Path(handle.name)
+        handle.close()
+        timed_command = ["script", "-q", "-c", shlex.join(timed_command), str(transcript_path)]
     result = subprocess.run(timed_command, check=False, capture_output=True, text=True)
     elapsed = (time.perf_counter() - started) * 1000
     memory_match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", result.stderr)
     peak_memory = int(memory_match.group(1)) * 1024 if memory_match else None
-    return result.stdout, result.stderr, result.returncode, elapsed, peak_memory
+    stdout = result.stdout
+    if transcript_path is not None:
+        try:
+            stdout = transcript_path.read_text(encoding="utf-8", errors="replace")
+        finally:
+            transcript_path.unlink(missing_ok=True)
+    return stdout, result.stderr, result.returncode, elapsed, peak_memory
 
 
 def base_record(config, variant, model, llama_cli, prompt_id=None, context_length=None):
@@ -153,7 +169,7 @@ def run_prompt_benchmark(config, models, llama_cpp_dir, output_path, execute):
                         "latency_ms": latency,
                         "peak_memory_bytes": peak_memory,
                         "command": command_string(command),
-                        "quality_metric": parse_expected(prompt, combined),
+                        "quality_metric": parse_expected(prompt, combined.replace(prompt["prompt"], "")),
                         "error": None if returncode == 0 else (stderr[-2000:] or f"exit {returncode}"),
                     }
                 )
