@@ -27,6 +27,17 @@ from .common import (
 )
 
 
+_SHA256_CACHE: dict[Path, str] = {}
+
+
+def cached_sha256(path: Path) -> str:
+    """Hash each large artifact at most once per benchmark process."""
+    resolved = path.resolve()
+    if resolved not in _SHA256_CACHE:
+        _SHA256_CACHE[resolved] = sha256_file(resolved)
+    return _SHA256_CACHE[resolved]
+
+
 def discover_models(config: dict, artifact_dir: Path) -> list[tuple[str, Path, str]]:
     models: list[tuple[str, Path, str]] = []
     converted = artifact_dir / "converted" / "Muse-Glimmer-30B-BF16.gguf"
@@ -75,11 +86,11 @@ def base_record(config, variant, model, llama_cli, prompt_id=None, context_lengt
         "variant": variant,
         "model_path": str(model),
         "model_size_bytes": model.stat().st_size if model.is_file() else None,
-        "model_sha256": sha256_file(model) if model.is_file() else None,
+        "model_sha256": cached_sha256(model) if model.is_file() else None,
         "source_model_revision": config["model"]["source_revision"],
         "llama_cpp_revision": llama_version(llama_cli),
         "quantization_recipe": variant,
-        "calibration_dataset_hash": sha256_file(calibration) if calibration.is_file() else "unavailable",
+        "calibration_dataset_hash": cached_sha256(calibration) if calibration.is_file() else "unavailable",
         "hardware": hardware_metadata(),
         "prompt_id": prompt_id,
         "seed": config["benchmark"]["seed"],
