@@ -1,9 +1,10 @@
 # Stage 1: custom Q4 first (preliminary research snapshot)
 
 This is a research-preview report, not a publication-grade benchmark release.
-The custom Q4 artifact and its checksum are verified, but the original
-workspace did not export all raw benchmark and billing records. Those missing
-fields are listed explicitly in `results/stage1/` and are not reconstructed.
+The custom Q4 artifact and its checksum are verified. Recovered speed,
+perplexity, and prompt records are listed in `results/stage1/`; billing,
+peak-memory, and the historical source commit remain unavailable and are not
+reconstructed.
 
 Completed on 2026-08-12 with one NVIDIA A100 SXM 80 GB workspace on VESSL.
 The BF16 source was kept immutable. The custom quant was produced from the
@@ -46,10 +47,9 @@ records are qualitative outputs for later review. Peak memory was not
 available because the container image did not include `/usr/bin/time -v`.
 
 The prompt JSONL was persisted at VESSL object volume
-`muse-glimmer-q4-stage1/stage1-final/`. The speed and perplexity rows are
-explicitly marked as imported first-run console measurements because the
-ephemeral workspace was restarted before those raw console files were
-exported; they should be replaced by directly captured reruns in a later
+`muse-glimmer-q4-stage1/stage1-final/` and remains available there. The
+published speed and perplexity rows retain their original imported first-run
+markers; they should be replaced by directly captured reruns in a later
 publication-quality snapshot. The historical Stage 1 source was configured as
 mutable `main`; its exact commit was not exported and is therefore unknown.
 Future downloads are pinned to the immutable revision in

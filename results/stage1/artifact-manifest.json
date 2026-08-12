@@ -23,5 +23,26 @@
     "llama_cpp_build": "b10353",
     "runtime": "llama.cpp",
     "inference_requires_jinja": true
-  }
+  },
+  "recovered_evidence": [
+    {
+      "path": "results/stage1/raw/speed-final.jsonl",
+      "source_key": "stage1-final/speed-final.jsonl",
+      "size_bytes": 1106,
+      "sha256": "47871378e2561cee74996f5707bfa9bb73ebf2c7edb32fe92afd52fa2ff55bd1"
+    },
+    {
+      "path": "results/stage1/raw/perplexity-final.jsonl",
+      "source_key": "stage1-final/perplexity-final.jsonl",
+      "size_bytes": 806,
+      "sha256": "e7b8f8615b1676fd877d920ae988168cddaf21fbc39a1dd925d559ad2384e482"
+    },
+    {
+      "source_key": "stage1-final/benchmarks-final.jsonl",
+      "record_count": 40,
+      "size_bytes": 160400,
+      "sha256": "02b23e456b851f7e2fa256316f1c35b72de73128efebc746e07efaaa18641ed7",
+      "status": "available-in-vessl-storage; verbose prompt outputs not copied into Git"
+    }
+  ]
 }

@@ -1,0 +1,4 @@
+{"kind":"perplexity","variant":"bf16","quality_metric":9.3473,"command":"llama-perplexity -f evaluation/perplexity.txt -ngl 999","error":"Imported completed first-run perplexity benchmark"}
+{"kind":"perplexity","variant":"Muse-Glimmer-30B-q4_k_m","quality_metric":9.5372,"command":"llama-perplexity -f evaluation/perplexity.txt -ngl 999","error":"Imported completed first-run perplexity benchmark"}
+{"kind":"perplexity","variant":"meta_kquant_17gb","quality_metric":9.5390,"command":"llama-perplexity -f evaluation/perplexity.txt -ngl 999","error":"Imported completed first-run perplexity benchmark"}
+{"kind":"perplexity","variant":"meta_kquant_dynamic","quality_metric":9.3619,"command":"llama-perplexity -f evaluation/perplexity.txt -ngl 999","error":"Imported completed first-run perplexity benchmark"}
