@@ -9,7 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 from statistics import mean, median
 
-from .common import project_path
+from .common import parse_perplexity, parse_tokens_per_second, project_path
 
 
 def numeric(values):
@@ -24,23 +24,14 @@ def speed_value(record, field):
     if record.get("kind") != "speed":
         return None
     marker = "pp" if field == "prefill_tokens_per_second" else "tg"
-    import re
-
-    match = re.search(
-        rf"\|\s*{marker}\d+\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s*(?:±|\\+/-)",
-        raw,
-    )
-    return float(match.group(1)) if match else None
+    return parse_tokens_per_second(raw, marker)
 
 
 def quality_value(record):
     value = record.get("quality_metric")
     raw = record.get("raw_output", "")
     if record.get("kind") == "perplexity":
-        import re
-
-        match = re.search(r"(?:PPL|perplexity)\s*=\s*([0-9]+(?:\.[0-9]+)?)", raw, re.IGNORECASE)
-        return float(match.group(1)) if match else value
+        return parse_perplexity(raw) or value
     return value
 
 

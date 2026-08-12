@@ -1,5 +1,9 @@
 # Quantized Muse Glimmer
 
+**Status: research preview.** The repository contains a verified custom
+`Q4_K_M` artifact and a preliminary benchmark snapshot. It is an independent
+reproduction for learning and research, not an official Meta quantization.
+
 An educational, reproducible research lab for post-training quantization and
 benchmarking of Meta's Muse Glimmer 30B.
 
@@ -113,6 +117,10 @@ Run the complete remote procedure from
 5.5-hour/10-credit ceiling, billing snapshots, preflight checks, safe source
 cleanup, and workspace termination instructions.
 
+The model artifact will be distributed separately from this code repository.
+Hugging Face model link: **to be published after this repository's
+release-readiness review**.
+
 ## GPU execution requirements
 
 Use a system with at least 64 GiB system RAM and approximately 150 GiB of free
@@ -141,6 +149,11 @@ Model weights are excluded from Git. Public results should include the model
 revision, runtime revision, commands, calibration hash, hardware, file hashes,
 and benchmark records. This makes the study reproducible without redistributing
 multi-gigabyte artifacts.
+
+The committed `results/stage1/` bundle deliberately distinguishes verified
+artifact facts from unavailable historical exports. Stage 1 speed/perplexity
+measurements were imported from the first-run console and are therefore
+preliminary; missing raw logs and billing snapshots are not reconstructed.
 
 See [report/README.md](report/README.md) for the report questions and
 [configs/experiment.yaml](configs/experiment.yaml) for the immutable experiment

@@ -5,12 +5,25 @@ from pathlib import Path
 
 import pytest
 
-from scripts.common import load_config, project_path, sha256_file
+import scripts.benchmark as benchmark_module
+from scripts.benchmark import run_process
+from scripts.cleanup_source import main as cleanup_main
+from scripts.common import (
+    extract_completion,
+    load_config,
+    parse_peak_memory,
+    parse_perplexity,
+    parse_tokens_per_second,
+    project_path,
+    sha256_file,
+)
 from scripts.convert import build_command
 from scripts.prepare import download_commands
+from scripts.preflight import check, command_output, parse_gpu_info
 from scripts.preserve import preserve
 from scripts.quantize import recipe_commands
 from scripts.report import summarize, write_outputs
+from scripts.smoke import assert_smoke, build_command as smoke_command
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +39,9 @@ def test_config_has_required_experiment_contract():
     assert config["benchmark"]["jinja"] is True
     assert config["stages"]["first_gpu"]["recipes"] == ["q4_k_m"]
     assert config["stages"]["first_gpu"]["text_only"] is True
+    assert config["model"]["source_revision"] == "a4e59da52a7bc87ae7251dd5545c0dd437c44b68"
+    assert config["benchmark"]["context_length"] == 512
+    assert config["hardware_requirements"]["minimum_gpu_memory_gib"] == 80
 
 
 def test_conversion_command_preserves_bf16_source():
@@ -121,3 +137,149 @@ def test_calibration_and_evaluation_inputs_are_hashed_and_valid_jsonl():
     rows = [json.loads(line) for line in prompts.read_text().splitlines() if line.strip()]
     assert len(rows) >= 10
     assert all("id" in row and "category" in row and "prompt" in row for row in rows)
+
+
+def test_shared_parsers_cover_runtime_formats():
+    output = "prompt eval time = 12.5 ms / 512 tokens (40.96 tokens per second)\n"
+    table = "| pp512 | 3395.93 ± 318.07 |\n| tg128 | 28.62 +/- 0.02 |"
+    assert parse_tokens_per_second(output, "prompt eval time") == 40.96
+    assert parse_tokens_per_second(table, "pp") == 3395.93
+    assert parse_tokens_per_second(table, "tg") == 28.62
+    assert parse_perplexity("Final perplexity = 9.5372") == 9.5372
+    assert parse_peak_memory("Maximum resident set size (kbytes): 1234") == 1234 * 1024
+
+
+def test_pty_benchmark_wraps_script_inside_time(monkeypatch):
+    seen = {}
+
+    class Result:
+        stdout = ""
+        stderr = "Maximum resident set size (kbytes): 2048"
+        returncode = 0
+
+    monkeypatch.setattr(
+        benchmark_module.shutil,
+        "which",
+        lambda name: "/usr/bin/time" if name.endswith("time") else "/usr/bin/script",
+    )
+
+    def fake_run(command, **kwargs):
+        seen["command"] = command
+        return Result()
+
+    monkeypatch.setattr(benchmark_module.subprocess, "run", fake_run)
+    _, _, returncode, _, peak_memory = run_process(["echo", "--single-turn", "hello"], True)
+    assert returncode == 0
+    assert seen["command"][0:3] == ["/usr/bin/time", "-v", "script"]
+    assert peak_memory == 2048 * 1024
+
+
+def test_completion_removes_only_a_leading_echo():
+    prompt = "repeat this"
+    assert extract_completion(f"{prompt} {prompt} once", prompt) == f"{prompt} once"
+    assert extract_completion("model output", prompt) == "model output"
+
+
+def test_gpu_parser_and_preflight_contract(tmp_path, monkeypatch):
+    assert parse_gpu_info("NVIDIA A100-SXM4-80GB, 81920 MiB\n") == [
+        {"name": "NVIDIA A100-SXM4-80GB", "memory_mib": 81920.0}
+    ]
+    with pytest.raises(ValueError, match="Unsupported"):
+        command_output("sh", ["-c", "echo unsafe"])
+
+    artifact_dir = tmp_path / "artifacts"
+    (artifact_dir / "converted").mkdir(parents=True)
+    (artifact_dir / "converted" / "Muse-Glimmer-30B-BF16.gguf").write_bytes(b"bf16")
+    llama_dir = tmp_path / "llama.cpp" / "build" / "bin"
+    llama_dir.mkdir(parents=True)
+    (llama_dir / "llama-cli").write_bytes(b"placeholder")
+    monkeypatch.setattr("scripts.preflight.hardware_metadata", lambda: {"memory_bytes": 64 * 1024**3})
+    monkeypatch.setattr(
+        "scripts.preflight.shutil.disk_usage",
+        lambda _: type("Usage", (), {"free": 200 * 1024**3})(),
+    )
+    monkeypatch.setattr(
+        "scripts.preflight.command_output",
+        lambda executable, args, cwd=None: (
+            "NVIDIA A100-SXM4-80GB, 81920 MiB"
+            if executable == "nvidia-smi"
+            else "b10353"
+        ),
+    )
+    result = check(load_config(), artifact_dir, tmp_path / "llama.cpp", ["bf16"])
+    assert result["ok"] is True
+    assert result["artifacts_ok"] is True
+    assert result["gpu_ok"] is True
+    assert result["artifact_status"]["q4"] is False
+
+    monkeypatch.setattr(
+        "scripts.preflight.command_output",
+        lambda executable, args, cwd=None: (
+            "NVIDIA A100-SXM4-80GB, 40960 MiB\nNVIDIA A100-SXM4-80GB, 81920 MiB"
+            if executable == "nvidia-smi"
+            else "b10353"
+        ),
+    )
+    rejected = check(load_config(), artifact_dir, tmp_path / "llama.cpp", ["bf16"])
+    assert rejected["gpu_ok"] is False
+    assert rejected["ok"] is False
+
+
+def test_cleanup_requires_confirmation_and_matching_checksum(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    converted = tmp_path / "converted.gguf"
+    converted.write_bytes(b"converted")
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "project: {name: test}\n"
+        f"paths:\n  source_dir: {source_dir}\n  bf16_gguf: {converted}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="confirm-source-cleanup"):
+        cleanup_main(["--config", str(config_path), "--execute"])
+    cleanup_main(
+        [
+            "--config",
+            str(config_path),
+            "--execute",
+            "--confirm-source-cleanup",
+            "--expected-sha256",
+            sha256_file(converted),
+        ]
+    )
+    assert not source_dir.exists()
+
+
+def test_cleanup_rejects_checksum_mismatch(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    converted = tmp_path / "converted.gguf"
+    converted.write_bytes(b"converted")
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "project: {name: test}\n"
+        f"paths:\n  source_dir: {source_dir}\n  bf16_gguf: {converted}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        cleanup_main(
+            [
+                "--config",
+                str(config_path),
+                "--execute",
+                "--confirm-source-cleanup",
+                "--expected-sha256",
+                "0" * 64,
+            ]
+        )
+    assert source_dir.exists()
+
+
+def test_smoke_command_and_assertion():
+    command = smoke_command("model.gguf")
+    assert "--jinja" in command
+    assert "-c" in command
+    assert assert_smoke("Q4 smoke test passed.", "", 0, "Q4 smoke test passed.")
+    with pytest.raises(AssertionError, match="not generated"):
+        assert_smoke("different output", "", 0, "expected text")
