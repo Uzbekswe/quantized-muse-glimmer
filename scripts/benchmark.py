@@ -242,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", default="results/benchmarks.jsonl")
     parser.add_argument("--dry-run", action="store_true", help="Print commands without executing them")
     parser.add_argument("--execute", action="store_true", help="Run llama.cpp benchmarks")
+    parser.add_argument("--append", action="store_true", help="Append records instead of replacing the output JSONL")
     args = parser.parse_args(argv)
 
     config = load_config(args.config)
@@ -259,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         models = [("<model-variant>", project_path("artifacts/quantized/<model>.gguf"), "unknown")]
 
     output = project_path(args.output)
-    if args.execute:
+    if args.execute and not args.append:
         output.unlink(missing_ok=True)
     print(f"Benchmark mode={args.mode}; execution={'enabled' if args.execute else 'dry-run'}")
     if args.mode in {"prompt", "all"}:
