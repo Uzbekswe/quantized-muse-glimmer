@@ -7,6 +7,8 @@ import pytest
 
 from scripts.common import load_config, project_path, sha256_file
 from scripts.convert import build_command
+from scripts.prepare import download_commands
+from scripts.preserve import preserve
 from scripts.quantize import recipe_commands
 from scripts.report import summarize, write_outputs
 
@@ -20,6 +22,10 @@ def test_config_has_required_experiment_contract():
     assert config["model"]["llama_cpp_min_build"] >= 10353
     assert {recipe["quant_type"] for recipe in config["recipes"]} >= {"Q4_K_M", "Q5_K_M", "Q6_K"}
     assert any(recipe["calibrated"] for recipe in config["recipes"])
+    assert config["benchmark"]["prompt_repetitions"] == 1
+    assert config["benchmark"]["jinja"] is True
+    assert config["stages"]["first_gpu"]["recipes"] == ["q4_k_m"]
+    assert config["stages"]["first_gpu"]["text_only"] is True
 
 
 def test_conversion_command_preserves_bf16_source():
@@ -32,6 +38,15 @@ def test_conversion_command_preserves_bf16_source():
     assert "convert_hf_to_gguf.py" in command[1]
     assert "--outtype" in command
     assert command[-1] == "bf16"
+
+
+def test_text_only_download_excludes_multimodal_artifacts(tmp_path):
+    config = load_config()
+    commands = download_commands(config, tmp_path, text_only=True)
+    rendered = " ".join(" ".join(command) for command in commands)
+    assert "mmproj-kquant.gguf" not in rendered
+    assert "dflash-kquant.gguf" not in rendered
+    assert "muse-glimmer-30B-kquant-17gb.gguf" in rendered
 
 
 def test_quantization_recipes_are_named_and_do_not_target_source(tmp_path):
@@ -82,10 +97,21 @@ def test_report_summary_and_outputs(tmp_path):
     assert rows[0]["kind"] == "prompt"
     assert rows[0]["size_gib"] == 4.0
     assert rows[0]["decode_tok_s_median"] == 21.0
+    assert rows[0]["peak_memory_bytes_median"] is None
     write_outputs(rows, tmp_path / "results.md", tmp_path / "summary.csv")
     assert (tmp_path / "results.md").is_file()
     assert "q4_k_m" in (tmp_path / "results.md").read_text()
     assert "q4_k_m" in (tmp_path / "summary.csv").read_text()
+
+
+def test_preserve_copies_and_verifies_checksum(tmp_path):
+    source = tmp_path / "source.gguf"
+    destination = tmp_path / "persistent" / "q4.gguf"
+    source.write_bytes(b"verified q4 artifact")
+    record = preserve(source, destination)
+    assert destination.read_bytes() == source.read_bytes()
+    assert record["sha256"] == sha256_file(source)
+    assert record["size_bytes"] == source.stat().st_size
 
 
 def test_calibration_and_evaluation_inputs_are_hashed_and_valid_jsonl():

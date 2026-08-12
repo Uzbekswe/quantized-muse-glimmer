@@ -162,7 +162,17 @@ def parse_tokens_per_second(text: str, label: str) -> float | None:
 
     pattern = rf"{label}.*?([0-9]+(?:\.[0-9]+)?)\s+tokens per second"
     match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
-    return float(match.group(1)) if match else None
+    if match:
+        return float(match.group(1))
+
+    # llama-bench emits a compact table, for example:
+    # ``| pp512 | 3395.93 ± 318.07 |`` and ``| tg128 | 28.62 ± 0.02 |``.
+    table_match = re.search(
+        rf"\|\s*{label}\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s*(?:±|\\+/-)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return float(table_match.group(1)) if table_match else None
 
 
 def parse_token_count(text: str, label: str) -> int | None:

@@ -90,13 +90,36 @@ python -m scripts.quantize --dry-run
 python -m scripts.benchmark --dry-run
 ```
 
+## First paid GPU milestone
+
+The first remote run is deliberately staged. It creates and preserves one
+custom `Q4_K_M` before any optional recipe, then compares it with BF16 and
+Meta's official text GGUF baselines. It does not download `mmproj` or DFlash,
+create an importance matrix, or create Q5/Q6 variants.
+
+```bash
+python -m scripts.prepare --execute --text-only
+python -m scripts.convert --execute
+python -m scripts.quantize --execute --recipes q4_k_m --threads "$(nproc)"
+python -m scripts.preserve --execute \
+  --source artifacts/quantized/Muse-Glimmer-30B-q4_k_m.gguf \
+  --destination /shared/results/models/Muse-Glimmer-30B-custom-Q4_K_M.gguf
+python -m scripts.benchmark --execute --mode all
+python -m scripts.report --input results/benchmarks.jsonl
+```
+
+Run the complete remote procedure from
+[runbooks/vessl-stage1.md](runbooks/vessl-stage1.md). The runbook includes the
+5.5-hour/10-credit ceiling, billing snapshots, preflight checks, safe source
+cleanup, and workspace termination instructions.
+
 ## GPU execution requirements
 
 Use a system with at least 64 GiB system RAM and approximately 150 GiB of free
 disk for the source checkpoint, converted intermediate, and outputs. Build or
 download a `llama.cpp` version supporting Muse Glimmer, at least build `b10353`.
 
-The minimum custom pipeline is:
+The later full research pipeline is:
 
 ```bash
 python -m scripts.prepare --execute --artifact-dir /data/muse-glimmer

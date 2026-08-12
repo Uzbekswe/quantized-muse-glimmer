@@ -5,3 +5,114 @@ behavior that matters for the target workload.
 Reproducible research requires fixed inputs, versioned software, recorded
 hardware, and explicit limitations. A benchmark result without provenance is
 an observation, not a reproducible experiment.
+
+This held-out passage is intentionally plain text. It discusses the same
+research topic as the experiment without copying any prompt from the task
+suite. A language model reads a sequence of tokens and predicts the next token
+from its context. Perplexity summarizes how surprised the model is by a fixed
+sequence: lower values mean that the model assigns higher probability to the
+observed continuation. Perplexity is useful for comparing a source checkpoint
+and a quantized checkpoint, but it is not a complete measure of helpfulness,
+reasoning, coding ability, multilingual behavior, or instruction following.
+
+Post-training quantization changes the numerical representation of weights
+after training. BF16 stores a floating-point value with a sign, exponent, and
+fraction. A low-bit format stores groups of values together with compact
+scales and sometimes additional metadata. The scale lets a runtime recover an
+approximation of the original values during matrix multiplication. Because
+the approximation is not exact, two quantized models can have similar file
+sizes but different errors in sensitive layers. A useful evaluation therefore
+records file size, memory, prompt processing speed, generation speed, and
+quality metrics together.
+
+Calibration data should resemble the workload that matters. For a coding
+assistant, representative programs and explanations are more useful than a
+random list of words. For a multilingual assistant, the calibration sample
+should include the languages and scripts expected in deployment. An importance
+matrix uses activation information to estimate which weights or tensor regions
+are more sensitive to quantization. Importance-aware methods may improve a
+small model at the same nominal bit rate, but the result depends on the
+calibration distribution and the quantization implementation.
+
+GGUF is a file format used by llama.cpp and related runtimes. It stores model
+metadata and tensors in a form that can be memory mapped and loaded by the
+runtime. A model file is not the same thing as every component used by a
+multimodal system. A vision projector may be distributed as a separate
+mmproj file, while a speculative decoding drafter such as DFlash is a separate
+speed component. This text-only experiment intentionally excludes those files
+so that the first comparison isolates language-model weight quantization.
+
+Fair benchmarking fixes the model revision, runtime revision, hardware,
+prompt text, decoding parameters, random seed, context length, and number of
+runs. It also records failures instead of silently dropping them. A result
+that cannot be reproduced is still a useful observation, but it should be
+labelled as such. In particular, a quantized model that loads successfully but
+changes an expected JSON structure has a different tradeoff from one that
+only saves disk space while preserving task behavior.
+
+Memory use has more than one meaning. The model file size measures storage,
+while resident memory measures host allocations, and device memory measures
+GPU allocations. Runtime buffers, the key-value cache, temporary workspaces,
+and the context length can all affect the amount of memory required at
+inference time. A smaller file usually makes deployment easier, but it does
+not guarantee a proportional reduction in every runtime allocation.
+
+The BF16 source is kept immutable in this study. The conversion to BF16 GGUF
+is an intermediate representation, and Q4_K_M is produced from that BF16
+representation rather than from an official quantized file. This distinction
+matters because re-quantizing an already-quantized model compounds numerical
+error and makes the comparison difficult to interpret. Independent custom
+files should not be described as byte-identical reproductions of a vendor's
+private calibration or packaging process.
+
+The main research question is practical: how much numerical precision can be
+removed before the behavior that matters becomes unacceptable? The answer is
+not a single universal number. It depends on architecture, tensor sensitivity,
+the calibration distribution, the runtime, and the workload. A four-bit model
+can be excellent for one workload and noticeably worse for another. This is
+why the experiment reports both aggregate measurements and a small fixed set
+of concrete prompts.
+
+When interpreting results, latency should be separated from throughput. A
+single short request includes model loading and setup overhead, whereas a
+long-running server can amortize those costs over many requests. Prefill
+speed describes processing input tokens, and decode speed describes generating
+new tokens. A quantized model can be faster in one phase and constrained by a
+different bottleneck in another. The llama-bench measurements and prompt
+measurements answer related but different questions.
+
+The benchmark runner uses deterministic decoding for the initial task suite.
+Temperature zero, top-p one, top-k one, a fixed seed, and one pass per prompt
+make the first result easy to inspect. This does not imply that all model
+behavior is deterministic in every runtime configuration. Repeated runs are
+reserved for the lower-noise speed benchmark, and a later study can add
+multiple task repetitions once the pipeline is trusted.
+
+A quality metric can be binary, numeric, or human-reviewed. The initial prompt
+suite includes expected-answer checks where a short exact behavior is easy to
+state. Those checks are deliberately modest: passing them does not establish
+general model quality. A stronger follow-up can add a larger held-out corpus,
+structured-output validation, code execution tests, and blinded human review.
+Every extension should preserve the original baseline records so that later
+results remain comparable.
+
+The experiment also records tool versions and checksums. A model name alone is
+not a sufficient identity because a repository can change over time and a
+download can be incomplete. SHA-256 hashes identify the exact local artifacts
+used by the run. The llama.cpp commit identifies the conversion and inference
+implementation. Hardware metadata explains why a speed result should not be
+compared directly with a result from a different accelerator.
+
+The first paid run has a strict stopping rule. It creates one custom Q4_K_M,
+verifies that the file loads, preserves it in temporary object storage, and
+benchmarks it against BF16 and two official text builds. It does not create a
+vision projector, a DFlash drafter, an importance matrix, Q5, or Q6. This
+ordering protects the main deliverable and leaves a measured decision point
+for the next experiment.
+
+This study is educational rather than a claim about the best Muse Glimmer
+deployment. The official Meta files are external baselines, while the custom
+Q4 file is an independent conversion and quantization. The exact calibration
+data and internal recipe used for official files are not assumed to be known.
+The report should preserve these limitations alongside the numbers instead of
+turning one successful smoke test into a broad quality claim.

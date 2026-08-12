@@ -46,13 +46,28 @@ benchmark:
   prompts_file: evaluation/prompts.jsonl
   perplexity_file: evaluation/perplexity.txt
   repetitions: 3
+  prompt_repetitions: 1
   max_tokens: 128
   seed: 42
   temperature: 0.0
   top_p: 1.0
   top_k: 1
   gpu_layers: 999
+  jinja: true
   context_lengths: [512, 4096]
+
+stages:
+  first_gpu:
+    name: q4-plus-baselines
+    recipes: [q4_k_m]
+    official_baselines: [meta_kquant_17gb, meta_kquant_dynamic]
+    text_only: true
+    create_imatrix: false
+    preserve_q4: true
+    max_runtime_hours: 5.5
+    max_credits: 10.0
+    a100_credits_per_hour: 1.55
+    persistent_model_dir: /shared/results/models
 
 hardware_requirements:
   minimum_system_ram_gib: 64
