@@ -8,6 +8,8 @@ The custom Q4 file is preserved outside Git and is not included in this
 repository. Its SHA-256 is recorded in `SHA256SUMS` and its metadata is in
 `artifact-manifest.json`.
 
-Unavailable raw speed/perplexity records and billing snapshots are marked as
-unavailable in `provenance.json`; no values were reconstructed from memory or
-retroactively presented as raw measurements.
+Recovered speed/perplexity records are included under `raw/` and retain their
+original imported-measurement markers. Prompt records remain in VESSL object
+storage because they contain verbose model output. Billing snapshots, peak
+memory, and the historical source commit remain unavailable; no values were
+reconstructed from memory or retroactively presented as direct measurements.

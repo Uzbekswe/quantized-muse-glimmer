@@ -9,14 +9,21 @@
       "reason": "Stage 1 used mutable Hugging Face main and the exact commit was not exported before the workspace ended."
     },
     "raw_speed_records": {
-      "value": null,
-      "status": "unavailable",
-      "reason": "The ephemeral workspace restarted before raw speed output was exported; report values are labelled imported console measurements."
+      "value": "results/stage1/raw/speed-final.jsonl",
+      "status": "recovered-imported-records",
+      "reason": "Recovered from VESSL object storage; each record retains the original marker that its values were imported from the completed first-run console benchmark."
     },
     "raw_perplexity_records": {
-      "value": null,
-      "status": "unavailable",
-      "reason": "The ephemeral workspace restarted before raw perplexity output was exported; report values are labelled imported console measurements."
+      "value": "results/stage1/raw/perplexity-final.jsonl",
+      "status": "recovered-imported-records",
+      "reason": "Recovered from VESSL object storage; each record retains the original marker that its value was imported from the completed first-run perplexity benchmark."
+    },
+    "raw_prompt_records": {
+      "value": "stage1-final/benchmarks-final.jsonl",
+      "status": "available-in-vessl-storage",
+      "record_count": 40,
+      "sha256": "02b23e456b851f7e2fa256316f1c35b72de73128efebc746e07efaaa18641ed7",
+      "reason": "Kept in VESSL object storage because the records contain verbose model output; the public report contains aggregate results."
     },
     "billing_snapshots": {
       "value": null,

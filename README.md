@@ -151,9 +151,10 @@ and benchmark records. This makes the study reproducible without redistributing
 multi-gigabyte artifacts.
 
 The committed `results/stage1/` bundle deliberately distinguishes verified
-artifact facts from unavailable historical exports. Stage 1 speed/perplexity
-measurements were imported from the first-run console and are therefore
-preliminary; missing raw logs and billing snapshots are not reconstructed.
+artifact facts from recovered imported measurements. Stage 1 speed/perplexity
+records are included with their preliminary markers; peak-memory, billing
+snapshots, and the historical source commit remain unavailable and are not
+reconstructed.
 
 See [report/README.md](report/README.md) for the report questions and
 [configs/experiment.yaml](configs/experiment.yaml) for the immutable experiment
